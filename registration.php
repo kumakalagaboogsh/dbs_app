@@ -13,7 +13,9 @@ if (isset($_POST['register'])) {
   $password = password_hash($_POST['password'], PASSWORD_BCRYPT);
   $firstname = $_POST['first_name'];
   $lastname = $_POST['last_name'];
-  $userID = $con->signupUser($firstname, $lastname, $username, $password);
+  $email = $_POST['email'];
+  $userID = $con->signupUser($firstname, $lastname, $username, $email, $password);
+  
  
   if ($userID) {
  
@@ -72,18 +74,27 @@ if (isset($_POST['register'])) {
         <div class="invalid-feedback">Username is required.</div>
       </div>
       <div class="mb-3">
+        <label for="username" class="form-label">Email</label>
+        <input type="email" name="email" id="email" class="form-control" placeholder="Enter your email" required>
+        <div class="invalid-feedback">Email is required.</div>
+      </div>
+      <div class="mb-3">
         <label for="password" class="form-label">Password</label>
         <input type="password" name="password" id="password" class="form-control" placeholder="Enter your password" required>
         <div class="invalid-feedback">Password must be at least 6 characters long, include an uppercase letter, a number, and a special character.</div>      
       </div>
       <button type="submit" id="registerButton" name="register" class="btn btn-primary w-100">Register</button>
- 
+      <div class="my-3 text-end"></div>
+      <span>Have an account?</span>
+      <a href="login.php" class="btn btn-link p-0 align-baseline">Log In Now</a>
     </form>
   </div>
  
   <script src="./bootstrap-5.3.3-dist/js/bootstrap.js"></script>
   <script src="./package/dist/sweetalert2.js"></script>
   <?php echo $sweetAlertConfig; ?>
+
+  
   <script>
   // Function to validate individual fields
   function validateField(field, validationFn) {
@@ -157,11 +168,67 @@ if (isset($_POST['register'])) {
     });
  
   };
+
+
+  const checkEmailAvailability = (emailField) => {
+    emailField.addEventListener('input', () => {
+      const email = emailField.value.trim();
+ 
+      if (email === '') {
+        emailField.classList.remove('is-valid');
+        emailField.classList.add('is-invalid');
+        emailField.nextElementSibling.textContent = 'Email is required.';
+        registrationButton.disabled = true;
+        return;
+      }
+ 
+      fetch('AJAX/check_email.php', {
+ 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `email=${encodeURIComponent(email)}`,
+      })
+      .then((response) => response.json())
+      .then((data) => {
+ 
+        if(data.exists){
+ 
+          emailField.classList.remove('is-valid');
+          emailField.classList.add('is-invalid');
+          emailField.nextElementSibling.textContent = 'Email is already taken';
+          registrationButton.disabled = true;
+ 
+        } else {
+ 
+          emailField.classList.remove('is-invalid');
+          emailField.classList.add('is-valid');
+          emailField.nextElementSibling.textContent = '';
+          registrationButton.disabled = false;
+ 
+        }
+ 
+      })
+ 
+      .catch((error) => {
+ 
+        console.error('Error:', error);
+        registrationButton.disabled = true;
+ 
+      });
+ 
+    });
+ 
+  };
+
+  
  
   // Get form fields
   const firstName = document.getElementById('first_name');
   const lastName = document.getElementById('last_name');
   const username = document.getElementById('username');
+  const email = document.getElementById('email');
   const password = document.getElementById('password');
  
   // Attach real-time validation to each field
@@ -169,7 +236,8 @@ if (isset($_POST['register'])) {
   validateField(lastName, isNotEmpty);
   validateField(password, isPasswordValid);
   checkUsernameAvailability(username);
- 
+  checkEmailAvailability(email);
+
   // Form submission validation
   document.getElementById('registrationForm').addEventListener('submit', function (e) {
    // e.preventDefault(); // Prevent form submission for validation
